@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory - MERCIA</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <style>
+        body { background: #F2F5EA; }
+        .page-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px; }
+        .page-header h1 { font-size:28px;color:#2C363F; }
+        .toolbar { display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px; }
+        .toolbar input, .toolbar select {
+            padding:9px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;
+            font-family:inherit;background:white;transition:border-color 0.2s;
+        }
+        .toolbar input:focus, .toolbar select:focus { outline:none;border-color:#E39774; }
+        .toolbar input { min-width:240px; }
+        .btn { padding:9px 18px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s; }
+        .btn-accent { background:#E39774;color:white; }
+        .btn-accent:hover { background:#d17d5e;transform:translateY(-1px); }
+        .btn-sm { padding:5px 12px;font-size:12px;border-radius:6px; }
+        .btn-edit { background:#dce7ff;color:#2f56b7;border:none;cursor:pointer; }
+        .btn-delete { background:#fde8e8;color:#c0392b;border:none;cursor:pointer; }
+        .btn-edit:hover { background:#b8d0ff; }
+        .btn-delete:hover { background:#fbc5c5; }
+        .data-table { width:100%;border-collapse:collapse;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06); }
+        .data-table th { background:#2C363F;color:white;padding:14px 16px;text-align:left;font-size:13px;font-weight:600; }
+        .data-table td { padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:14px;color:#2C363F; }
+        .data-table tr:last-child td { border-bottom:none; }
+        .data-table tr:hover td { background:#fafafa; }
+        .status-badge { padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600; }
+        .status-active { background:#d6f5e4;color:#1e5f34; }
+        .status-low { background:#ffe6d4;color:#b25d29; }
+        .status-out { background:#fde8e8;color:#c0392b; }
+        .status-disc { background:#e8e8e8;color:#666; }
+
+        /* Modal */
+        .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center; }
+        .modal-overlay.show { display:flex; }
+        .modal { background:white;border-radius:20px;padding:32px;max-width:700px;width:90%;max-height:88vh;overflow-y:auto;position:relative; }
+        .modal h2 { margin-bottom:20px;color:#2C363F;font-size:22px; }
+        .form-grid { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+        .form-group-m { display:flex;flex-direction:column;gap:5px; }
+        .form-group-m.full { grid-column:1/-1; }
+        .form-group-m label { font-size:13px;font-weight:600;color:#555; }
+        .form-group-m input, .form-group-m select, .form-group-m textarea {
+            padding:9px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;
+            font-family:inherit;transition:border-color 0.2s;
+        }
+        .form-group-m input:focus, .form-group-m select:focus, .form-group-m textarea:focus {
+            outline:none;border-color:#E39774;
+        }
+        .modal-footer { display:flex;gap:10px;justify-content:flex-end;margin-top:20px; }
+        .btn-cancel { background:#f0f0f0;color:#555;padding:9px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px; }
+        .close-btn { position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;cursor:pointer;color:#999; }
+        .empty-state { text-align:center;padding:60px 20px;color:#7b8591; }
+        .empty-state span { font-size:48px;display:block;margin-bottom:12px; }
+        .total-info { color:#7b8591;font-size:14px;margin-bottom:8px; }
+        .confirm-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center; }
+        .confirm-overlay.show { display:flex; }
+        .confirm-box { background:white;border-radius:16px;padding:28px;max-width:400px;width:90%;text-align:center; }
+        .confirm-box h3 { margin-bottom:10px;color:#2C363F; }
+        .confirm-box p { color:#7b8591;margin-bottom:20px; }
+        .confirm-actions { display:flex;gap:10px;justify-content:center; }
+        .toast { position:fixed;bottom:24px;right:24px;background:#2C363F;color:white;padding:12px 20px;border-radius:10px;font-size:14px;z-index:3000;transform:translateY(80px);opacity:0;transition:all 0.3s; }
+        .toast.show { transform:translateY(0);opacity:1; }
+        .toast.success { background:#27ae60; }
+        .toast.error { background:#c0392b; }
+    </style>
+</head>
+<body>
+<header>
+    <div class="navbar">
+        <a href="../dashboard.html" class="logo">MERCIA</a>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="inventory.html">Inventory</a></li>
+                <li><a href="billing.html">Billing</a></li>
+                <li><a href="customers.html">Customers</a></li>
+                <li><a href="staff.html">Staff</a></li>
+                <li><a href="reports.html">Reports</a></li>
+                <li><a href="settings.html">Settings</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main style="max-width:1240px;margin:32px auto;padding:0 20px;">
+    <div class="page-header">
+        <div>
+            <h1>📦 Inventory Management</h1>
+            <p style="color:#7b8591;font-size:14px;margin-top:4px;" id="total-info">Loading...</p>
+        </div>
+        <button class="btn btn-accent" onclick="openAddModal()">+ Add New Item</button>
+    </div>
+
+    <div class="toolbar">
+        <input type="text" id="search-input" placeholder="🔍 Search by name, SKU, brand, supplier..." oninput="fetchItems()">
+        <select id="filter-category" onchange="fetchItems()">
+            <option value="">All Categories</option>
+        </select>
+        <select id="filter-status" onchange="fetchItems()">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="low-stock">Low Stock</option>
+            <option value="out-of-stock">Out of Stock</option>
+            <option value="discontinued">Discontinued</option>
+        </select>
+        <select id="sort-by" onchange="fetchItems()">
+            <option value="createdAt">Sort: Newest</option>
+            <option value="name">Sort: Name A-Z</option>
+            <option value="stockQty">Sort: Stock Level</option>
+            <option value="sellingPrice">Sort: Price</option>
+        </select>
+    </div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>SKU</th>
+                <th>Category</th>
+                <th>Stock</th>
+                <th>Purchase ₹</th>
+                <th>Selling ₹</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="inventory-tbody">
+            <tr><td colspan="8" class="empty-state"><span>⏳</span>Loading inventory...</td></tr>
+        </tbody>
+    </table>
+</main>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="item-modal">
+    <div class="modal">
+        <button class="close-btn" onclick="closeModal()">✕</button>
+        <h2 id="modal-title">Add New Item</h2>
+        <form id="item-form">
+            <div class="form-grid">
+                <div class="form-group-m">
+                    <label>Item Name *</label>
+                    <input type="text" id="f-name" required placeholder="e.g. Basmati Rice 5kg">
+                </div>
+                <div class="form-group-m">
+                    <label>SKU *</label>
+                    <input type="text" id="f-sku" required placeholder="e.g. RICE-5KG-001">
+                </div>
+                <div class="form-group-m">
+                    <label>Category *</label>
+                    <input type="text" id="f-category" required placeholder="e.g. Grains">
+                </div>
+                <div class="form-group-m">
+                    <label>Brand</label>
+                    <input type="text" id="f-brand" placeholder="e.g. India Gate">
+                </div>
+                <div class="form-group-m">
+                    <label>Purchase Price (₹) *</label>
+                    <input type="number" id="f-purchasePrice" required min="0" step="0.01">
+                </div>
+                <div class="form-group-m">
+                    <label>Selling Price (₹) *</label>
+                    <input type="number" id="f-sellingPrice" required min="0" step="0.01">
+                </div>
+                <div class="form-group-m">
+                    <label>MRP (₹)</label>
+                    <input type="number" id="f-mrp" min="0" step="0.01">
+                </div>
+                <div class="form-group-m">
+                    <label>Tax (%)</label>
+                    <input type="number" id="f-tax" min="0" max="100" step="0.01" value="0">
+                </div>
+                <div class="form-group-m">
+                    <label>Stock Quantity *</label>
+                    <input type="number" id="f-stockQty" required min="0" value="0">
+                </div>
+                <div class="form-group-m">
+                    <label>Min Stock Level</label>
+                    <input type="number" id="f-minStockLevel" min="0" value="5">
+                </div>
+                <div class="form-group-m">
+                    <label>Supplier</label>
+                    <input type="text" id="f-supplier" placeholder="Supplier name">
+                </div>
+                <div class="form-group-m">
+                    <label>Unit</label>
+                    <select id="f-unit">
+                        <option>pcs</option><option>kg</option><option>g</option>
+                        <option>litre</option><option>ml</option><option>box</option>
+                        <option>dozen</option><option>pair</option><option>set</option>
+                    </select>
+                </div>
+                <div class="form-group-m">
+                    <label>Manufacture Date</label>
+                    <input type="date" id="f-manufactureDate">
+                </div>
+                <div class="form-group-m">
+                    <label>Expiry Date</label>
+                    <input type="date" id="f-expiryDate">
+                </div>
+                <div class="form-group-m full">
+                    <label>Barcode</label>
+                    <input type="text" id="f-barcode" placeholder="Optional barcode">
+                </div>
+                <div class="form-group-m full">
+                    <label>Description</label>
+                    <textarea id="f-description" rows="2" placeholder="Item description..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-accent" id="save-btn">Save Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation -->
+<div class="confirm-overlay" id="confirm-modal">
+    <div class="confirm-box">
+        <h3>Delete Item?</h3>
+        <p id="confirm-msg">This action cannot be undone.</p>
+        <div class="confirm-actions">
+            <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+            <button class="btn btn-accent" style="background:#c0392b;" id="confirm-yes-btn">Delete</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="../js/auth.js"></script>
+<script>
+    let editingId = null;
+    let deleteId = null;
+
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast ${type} show`;
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function statusBadge(status) {
+        const map = { active:'status-active', 'low-stock':'status-low', 'out-of-stock':'status-out', discontinued:'status-disc' };
+        const labels = { active:'Active', 'low-stock':'Low Stock', 'out-of-stock':'Out of Stock', discontinued:'Discontinued' };
+        return `<span class="status-badge ${map[status] || ''}">${labels[status] || status}</span>`;
+    }
+
+    async function fetchItems() {
+        const search = document.getElementById('search-input').value;
+        const category = document.getElementById('filter-category').value;
+        const status = document.getElementById('filter-status').value;
+        const sortBy = document.getElementById('sort-by').value;
+        const params = new URLSearchParams({ search, category, status, sortBy, limit: 100 });
+
+        const data = await merciaApi(`/api/inventory?${params}`);
+        const tbody = document.getElementById('inventory-tbody');
+        document.getElementById('total-info').textContent = `${data.total} item(s) in catalogue`;
+
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span>📦</span>No items found. Add your first item!</div></td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(item => `
+            <tr>
+                <td><strong>${item.name}</strong><br><small style="color:#999">${item.brand || ''}</small></td>
+                <td><code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:12px;">${item.sku}</code></td>
+                <td>${item.category}</td>
+                <td>
+                    <strong>${item.stockQty}</strong> <small>${item.unit}</small><br>
+                    <small style="color:#999">min: ${item.minStockLevel}</small>
+                </td>
+                <td>₹${item.purchasePrice.toLocaleString('en-IN')}</td>
+                <td>₹${item.sellingPrice.toLocaleString('en-IN')}</td>
+                <td>${statusBadge(item.status)}</td>
+                <td>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-sm btn-edit" onclick="openEditModal('${item._id}')">Edit</button>
+                        <button class="btn btn-sm btn-delete" onclick="confirmDelete('${item._id}','${item.name}')">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function loadCategories() {
+        const data = await merciaApi('/api/inventory/categories');
+        if (!data?.data) return;
+        const sel = document.getElementById('filter-category');
+        data.data.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat; opt.textContent = cat;
+            sel.appendChild(opt);
+        });
+    }
+
+    function openAddModal() {
+        editingId = null;
+        document.getElementById('modal-title').textContent = 'Add New Item';
+        document.getElementById('item-form').reset();
+        document.getElementById('f-minStockLevel').value = 5;
+        document.getElementById('f-stockQty').value = 0;
+        document.getElementById('f-tax').value = 0;
+        document.getElementById('item-modal').classList.add('show');
+    }
+
+    async function openEditModal(id) {
+        editingId = id;
+        document.getElementById('modal-title').textContent = 'Edit Item';
+        const data = await merciaApi(`/api/inventory/${id}`);
+        const item = data.data;
+
+        document.getElementById('f-name').value = item.name || '';
+        document.getElementById('f-sku').value = item.sku || '';
+        document.getElementById('f-category').value = item.category || '';
+        document.getElementById('f-brand').value = item.brand || '';
+        document.getElementById('f-purchasePrice').value = item.purchasePrice || '';
+        document.getElementById('f-sellingPrice').value = item.sellingPrice || '';
+        document.getElementById('f-mrp').value = item.mrp || '';
+        document.getElementById('f-tax').value = item.tax || 0;
+        document.getElementById('f-stockQty').value = item.stockQty || 0;
+        document.getElementById('f-minStockLevel').value = item.minStockLevel || 5;
+        document.getElementById('f-supplier').value = item.supplier || '';
+        document.getElementById('f-unit').value = item.unit || 'pcs';
+        document.getElementById('f-barcode').value = item.barcode || '';
+        document.getElementById('f-description').value = item.description || '';
+        if (item.manufactureDate) document.getElementById('f-manufactureDate').value = item.manufactureDate.split('T')[0];
+        if (item.expiryDate) document.getElementById('f-expiryDate').value = item.expiryDate.split('T')[0];
+
+        document.getElementById('item-modal').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('item-modal').classList.remove('show');
+        editingId = null;
+    }
+
+    document.getElementById('item-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = document.getElementById('save-btn');
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving...';
+
+        const body = {
+            name: document.getElementById('f-name').value.trim(),
+            sku: document.getElementById('f-sku').value.trim(),
+            category: document.getElementById('f-category').value.trim(),
+            brand: document.getElementById('f-brand').value.trim(),
+            purchasePrice: Number(document.getElementById('f-purchasePrice').value),
+            sellingPrice: Number(document.getElementById('f-sellingPrice').value),
+            mrp: Number(document.getElementById('f-mrp').value) || undefined,
+            tax: Number(document.getElementById('f-tax').value) || 0,
+            stockQty: Number(document.getElementById('f-stockQty').value),
+            minStockLevel: Number(document.getElementById('f-minStockLevel').value),
+            supplier: document.getElementById('f-supplier').value.trim(),
+            unit: document.getElementById('f-unit').value,
+            barcode: document.getElementById('f-barcode').value.trim(),
+            description: document.getElementById('f-description').value.trim(),
+            manufactureDate: document.getElementById('f-manufactureDate').value || undefined,
+            expiryDate: document.getElementById('f-expiryDate').value || undefined,
+        };
+
+        const url = editingId ? `/api/inventory/${editingId}` : '/api/inventory';
+        const method = editingId ? 'PUT' : 'POST';
+
+        const data = await merciaApi(url, { method, body: JSON.stringify(body) });
+
+        if (data.success) {
+            showToast(editingId ? 'Item updated!' : 'Item added!', 'success');
+            closeModal();
+            fetchItems();
+            loadCategories();
+        } else {
+            showToast(data.message || 'Error saving item.', 'error');
+        }
+        saveBtn.disabled = false; saveBtn.textContent = 'Save Item';
+    });
+
+    function confirmDelete(id, name) {
+        deleteId = id;
+        document.getElementById('confirm-msg').textContent = `Delete "${name}"? This cannot be undone.`;
+        document.getElementById('confirm-modal').classList.add('show');
+    }
+
+    function closeConfirm() {
+        document.getElementById('confirm-modal').classList.remove('show');
+        deleteId = null;
+    }
+
+    document.getElementById('confirm-yes-btn').addEventListener('click', async () => {
+        if (!deleteId) return;
+        const data = await merciaApi(`/api/inventory/${deleteId}`, { method: 'DELETE' });
+        if (data.success) {
+            showToast(data.message, 'success');
+            fetchItems();
+        } else {
+            showToast(data.message || 'Delete failed.', 'error');
+        }
+        closeConfirm();
+    });
+
+    // Close modals on overlay click
+    document.getElementById('item-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
+    document.getElementById('confirm-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeConfirm(); });
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchItems();
+        loadCategories();
+    });
+</script>
+</body>
+</html>

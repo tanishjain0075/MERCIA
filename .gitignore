@@ -1,0 +1,4 @@
+// .gitignore — keep secrets and node_modules out of version control
+node_modules/
+.env
+*.log

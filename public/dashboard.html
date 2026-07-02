@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERCIA Dashboard</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <style>
+        .kpi-card strong { font-size: 30px; }
+        .kpi-loading { opacity: 0.4; font-style: italic; font-size: 20px; }
+        .alert-tag { display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600; }
+        .alert-tag.red { background:#fde8e8;color:#c0392b; }
+        .nav-links a.active { color: #E39774; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <a href="dashboard.html" class="logo">MERCIA</a>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                    <li><a href="pages/inventory.html">Inventory</a></li>
+                    <li><a href="pages/billing.html">Billing</a></li>
+                    <li><a href="pages/customers.html">Customers</a></li>
+                    <li><a href="pages/staff.html">Staff</a></li>
+                    <li><a href="pages/reports.html">Reports</a></li>
+                    <li><a href="pages/settings.html">Settings</a></li>
+                    <li><a href="pages/support.html">Support</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="dashboard-main">
+        <section class="page-title">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Welcome to your MERCIA workspace. Monitor inventory alerts, financial performance, employee status, and system health.</p>
+            </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="quick-actions">
+            <article class="action-card">
+                <h2>Inventory</h2>
+                <p>Track stock levels, manage warehouses, and review low-stock alerts in real-time.</p>
+                <a href="pages/inventory.html">Go to Inventory →</a>
+            </article>
+            <article class="action-card">
+                <h2>Billing</h2>
+                <p>Create invoices, track payments, and manage purchase bills in one place.</p>
+                <a href="pages/billing.html">Open Billing →</a>
+            </article>
+            <article class="action-card">
+                <h2>Customers</h2>
+                <p>View customer profiles, purchase history, and outstanding balances.</p>
+                <a href="pages/customers.html">View Customers →</a>
+            </article>
+            <article class="action-card">
+                <h2>Staff</h2>
+                <p>Manage your team, mark attendance, and track HR records from one place.</p>
+                <a href="pages/staff.html">Check Staff →</a>
+            </article>
+        </section>
+
+        <!-- KPI Cards (Live) -->
+        <section class="kpi-grid">
+            <article class="kpi-card">
+                <h3>Orders Processed</h3>
+                <strong id="kpi-orders" class="kpi-loading">—</strong>
+                <span>Total bills generated</span>
+            </article>
+            <article class="kpi-card">
+                <h3>Revenue This Month</h3>
+                <strong id="kpi-revenue" class="kpi-loading">—</strong>
+                <span>Paid bills this month</span>
+            </article>
+            <article class="kpi-card">
+                <h3>Low Stock Alerts</h3>
+                <strong id="kpi-stock" class="kpi-loading">—</strong>
+                <span>Items needing attention</span>
+            </article>
+            <article class="kpi-card">
+                <h3>Team Availability</h3>
+                <strong id="kpi-team" class="kpi-loading">—</strong>
+                <span>Present today</span>
+            </article>
+        </section>
+
+        <section class="section">
+            <!-- Inventory Health -->
+            <div class="card">
+                <h3>Inventory Health</h3>
+                <div class="status-list" id="inventory-health-list">
+                    <p style="color:#7b8591;margin-top:12px;">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Recent Bills -->
+            <div class="card">
+                <h3>Recent Bills</h3>
+                <table class="reports-table">
+                    <thead>
+                        <tr>
+                            <th>Bill #</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-bills-tbody">
+                        <tr><td colspan="4" style="color:#7b8591;padding:16px;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="card">
+                <h3>Quick Stats</h3>
+                <div class="status-list" id="quick-stats-list">
+                    <p style="color:#7b8591;margin-top:12px;">Loading...</p>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Today's Attendance</h3>
+                <div class="team-grid" id="attendance-summary">
+                    <p style="color:#7b8591;">Loading...</p>
+                </div>
+            </div>
+        </section>
+
+        <p class="footer-note">&copy; 2026 MERCIA. All rights reserved.</p>
+    </main>
+
+    <!-- Auth guard must load first -->
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const data = await merciaApi('/api/dashboard/stats');
+                if (!data || !data.success) return;
+
+                const { kpis, inventoryHealth, recentBills, attendanceSummary } = data.data;
+
+                // ── KPIs ──
+                document.getElementById('kpi-orders').textContent = kpis.ordersProcessed.toLocaleString();
+                document.getElementById('kpi-orders').classList.remove('kpi-loading');
+
+                document.getElementById('kpi-revenue').textContent = '₹' + Number(kpis.monthRevenue).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+                document.getElementById('kpi-revenue').classList.remove('kpi-loading');
+
+                document.getElementById('kpi-stock').textContent = kpis.lowStockAlerts + ' Items';
+                document.getElementById('kpi-stock').classList.remove('kpi-loading');
+
+                document.getElementById('kpi-team').textContent = kpis.teamAvailability + '%';
+                document.getElementById('kpi-team').classList.remove('kpi-loading');
+
+                // ── Inventory Health ──
+                const healthList = document.getElementById('inventory-health-list');
+                if (inventoryHealth.length === 0) {
+                    healthList.innerHTML = '<p style="color:#27ae60;margin-top:12px;">✅ All items are well stocked!</p>';
+                } else {
+                    healthList.innerHTML = inventoryHealth.map(item => `
+                        <div class="status-item">
+                            <div>
+                                <strong>${item.name}</strong>
+                                <span>SKU: ${item.sku} | Stock: ${item.stockQty} (min: ${item.minStockLevel})</span>
+                            </div>
+                            <span class="tag ${item.status === 'out-of-stock' ? 'orange' : 'blue'}">
+                                ${item.status === 'out-of-stock' ? 'Out of Stock' : 'Low Stock'}
+                            </span>
+                        </div>
+                    `).join('');
+                }
+
+                // ── Recent Bills ──
+                const tbody = document.getElementById('recent-bills-tbody');
+                if (recentBills.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="color:#7b8591;padding:16px;">No bills yet.</td></tr>';
+                } else {
+                    tbody.innerHTML = recentBills.map(bill => {
+                        const statusClass = bill.paymentStatus === 'Paid' ? 'green' : bill.paymentStatus === 'Pending' ? 'orange' : 'blue';
+                        return `<tr>
+                            <td>${bill.billNumber}</td>
+                            <td>${bill.customerName || '—'}</td>
+                            <td>₹${Number(bill.grandTotal).toLocaleString('en-IN')}</td>
+                            <td><span class="tag ${statusClass}">${bill.paymentStatus}</span></td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                // ── Quick Stats ──
+                document.getElementById('quick-stats-list').innerHTML = `
+                    <div class="status-item">
+                        <div><strong>Total Inventory Items</strong><span>Items in catalogue</span></div>
+                        <span class="tag blue">${kpis.totalInventory}</span>
+                    </div>
+                    <div class="status-item">
+                        <div><strong>Total Staff</strong><span>Active team members</span></div>
+                        <span class="tag green">${kpis.totalStaff}</span>
+                    </div>
+                    <div class="status-item">
+                        <div><strong>Total Customers</strong><span>Registered customers</span></div>
+                        <span class="tag blue">${kpis.totalCustomers}</span>
+                    </div>
+                `;
+
+                // ── Attendance Summary ──
+                const attDiv = document.getElementById('attendance-summary');
+                const statuses = ['Present', 'Absent', 'Half Day', 'Leave', 'Late'];
+                const colors = { Present: '#27ae60', Absent: '#e74c3c', 'Half Day': '#f39c12', Leave: '#3498db', Late: '#e67e22' };
+                attDiv.innerHTML = statuses.map(s => `
+                    <div class="team-card" style="text-align:center;">
+                        <h4 style="color:${colors[s]};font-size:28px;margin-bottom:4px;">${attendanceSummary[s] || 0}</h4>
+                        <p style="font-weight:600;font-size:13px;">${s}</p>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error('Dashboard load error:', err);
+            }
+        });
+    </script>
+</body>
+</html>

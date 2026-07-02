@@ -1,0 +1,35 @@
+{
+    "name":  "mercia",
+    "version":  "1.0.0",
+    "description":  "A comprehensive web-based business management solution for small and mid-level businesses.",
+    "main":  "server.js",
+    "scripts":  {
+                    "seed":  "node seed.js",
+                    "dev":  "node server.js",
+                    "start":  "node server.js"
+                },
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/tanishjain0075/MERCIA.git"
+                   },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "type":  "commonjs",
+    "bugs":  {
+                 "url":  "https://github.com/tanishjain0075/MERCIA/issues"
+             },
+    "homepage":  "https://github.com/tanishjain0075/MERCIA#readme",
+    "dependencies":  {
+                         "bcryptjs":  "^3.0.3",
+                         "cors":  "^2.8.6",
+                         "dotenv":  "^17.4.2",
+                         "express":  "^5.2.1",
+                         "express-validator":  "^7.3.2",
+                         "jsonwebtoken":  "^9.0.3",
+                         "mongoose":  "^9.7.3",
+                         "morgan":  "^1.11.0"
+                     }
+}

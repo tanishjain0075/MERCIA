@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing - MERCIA</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <style>
+        body { background:#F2F5EA; }
+        .page-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px; }
+        .page-header h1 { font-size:28px;color:#2C363F; }
+        .tabs { display:flex;gap:0;margin-bottom:28px;border-bottom:2px solid #e0e0e0; }
+        .tab-btn { padding:11px 24px;background:none;border:none;font-size:14px;font-weight:600;color:#7b8591;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s; }
+        .tab-btn.active { color:#E39774;border-bottom-color:#E39774; }
+        .tab-pane { display:none; }
+        .tab-pane.active { display:block; }
+        .btn { padding:9px 18px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s; }
+        .btn-accent { background:#E39774;color:white; }
+        .btn-accent:hover { background:#d17d5e; }
+        .btn-sm { padding:5px 12px;font-size:12px;border-radius:6px;border:none;cursor:pointer;font-weight:600; }
+        .btn-edit { background:#dce7ff;color:#2f56b7; }
+        .btn-delete { background:#fde8e8;color:#c0392b; }
+        .btn-dup { background:#d6f5e4;color:#1e5f34; }
+        .data-table { width:100%;border-collapse:collapse;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06); }
+        .data-table th { background:#2C363F;color:white;padding:13px 14px;text-align:left;font-size:13px;font-weight:600; }
+        .data-table td { padding:11px 14px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#2C363F; }
+        .data-table tr:last-child td { border-bottom:none; }
+        .data-table tr:hover td { background:#fafafa; }
+        .status-tag { padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;display:inline-block; }
+        .tag-paid { background:#d6f5e4;color:#1e5f34; }
+        .tag-pending { background:#ffe6d4;color:#b25d29; }
+        .tag-partial { background:#dce7ff;color:#2f56b7; }
+        .toolbar { display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px; }
+        .toolbar input, .toolbar select { padding:9px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit; }
+        .toolbar input:focus, .toolbar select:focus { outline:none;border-color:#E39774; }
+        .toolbar input { min-width:220px; }
+
+        /* New Bill */
+        .bill-layout { display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start; }
+        .bill-card { background:white;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.06); }
+        .bill-card h3 { font-size:16px;color:#2C363F;margin-bottom:16px;font-weight:700; }
+        .form-row { display:flex;flex-direction:column;gap:5px;margin-bottom:14px; }
+        .form-row label { font-size:13px;font-weight:600;color:#555; }
+        .form-row input, .form-row select, .form-row textarea {
+            padding:9px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;
+        }
+        .form-row input:focus, .form-row select:focus { outline:none;border-color:#E39774; }
+        .item-search-wrap { position:relative; }
+        .item-dropdown { position:absolute;top:100%;left:0;right:0;background:white;border:2px solid #E39774;border-radius:8px;z-index:100;max-height:200px;overflow-y:auto;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+        .item-dropdown.show { display:block; }
+        .dropdown-item { padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f0; }
+        .dropdown-item:hover { background:#fff5f0; }
+        .dropdown-item strong { display:block;color:#2C363F; }
+        .dropdown-item small { color:#7b8591; }
+        .items-table { width:100%;border-collapse:collapse;margin-bottom:14px; }
+        .items-table th { font-size:12px;font-weight:600;color:#7b8591;padding:8px;text-align:left;border-bottom:2px solid #f0f0f0; }
+        .items-table td { padding:8px;border-bottom:1px solid #f0f0f0;font-size:13px; }
+        .items-table td input { width:100%;padding:5px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px; }
+        .remove-item-btn { background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px; }
+        .summary-box { background:#F7F8FA;border-radius:12px;padding:16px; }
+        .summary-row { display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px; }
+        .summary-row.total { font-weight:700;font-size:17px;color:#2C363F;border-top:2px solid #e0e0e0;padding-top:10px;margin-top:10px; }
+        .confirm-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center; }
+        .confirm-overlay.show { display:flex; }
+        .confirm-box { background:white;border-radius:16px;padding:28px;max-width:400px;width:90%;text-align:center; }
+        .confirm-box h3 { margin-bottom:10px; }
+        .confirm-box p { color:#7b8591;margin-bottom:20px; }
+        .confirm-actions { display:flex;gap:10px;justify-content:center; }
+        .btn-cancel { background:#f0f0f0;color:#555;padding:9px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px; }
+        .toast { position:fixed;bottom:24px;right:24px;background:#2C363F;color:white;padding:12px 20px;border-radius:10px;font-size:14px;z-index:3000;transform:translateY(80px);opacity:0;transition:all 0.3s; }
+        .toast.show { transform:translateY(0);opacity:1; }
+        .toast.success { background:#27ae60; }
+        .toast.error { background:#c0392b; }
+        .empty-state { text-align:center;padding:50px 20px;color:#7b8591; }
+        .empty-state span { font-size:48px;display:block;margin-bottom:12px; }
+
+        /* Bill Print Modal */
+        .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center; }
+        .modal-overlay.show { display:flex; }
+        .bill-print { background:white;border-radius:16px;padding:32px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;position:relative; }
+        .close-btn { position:absolute;top:14px;right:18px;background:none;border:none;font-size:22px;cursor:pointer;color:#999; }
+
+        @media (max-width:800px) { .bill-layout { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+<header>
+    <div class="navbar">
+        <a href="../dashboard.html" class="logo">MERCIA</a>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="inventory.html">Inventory</a></li>
+                <li><a href="billing.html">Billing</a></li>
+                <li><a href="customers.html">Customers</a></li>
+                <li><a href="staff.html">Staff</a></li>
+                <li><a href="reports.html">Reports</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main style="max-width:1300px;margin:32px auto;padding:0 20px;">
+    <div class="page-header">
+        <h1>🧾 Billing</h1>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('existing',this)">📋 Existing Bills</button>
+        <button class="tab-btn" onclick="switchTab('new',this)">➕ New Bill</button>
+        <button class="tab-btn" onclick="switchTab('purchase',this)">📦 Purchase Bills</button>
+    </div>
+
+    <!-- ── TAB 1: Existing Bills ── -->
+    <div class="tab-pane active" id="tab-existing">
+        <div class="toolbar">
+            <input type="text" id="bill-search" placeholder="🔍 Search bill no., customer..." oninput="fetchBills()">
+            <select id="bill-pay-status" onchange="fetchBills()">
+                <option value="">All Status</option>
+                <option>Paid</option><option>Pending</option><option>Partial</option>
+            </select>
+            <select id="bill-pay-method" onchange="fetchBills()">
+                <option value="">All Methods</option>
+                <option>Cash</option><option>UPI</option><option>Card</option><option>Credit</option>
+            </select>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Bill #</th><th>Customer</th><th>Items</th><th>Total</th><th>Method</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="bills-tbody">
+                <tr><td colspan="8"><div class="empty-state"><span>⏳</span>Loading bills...</div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── TAB 2: New Bill ── -->
+    <div class="tab-pane" id="tab-new">
+        <div class="bill-layout">
+            <!-- Left: Bill Builder -->
+            <div>
+                <!-- Customer -->
+                <div class="bill-card" style="margin-bottom:16px;">
+                    <h3>👤 Customer</h3>
+                    <div class="form-row">
+                        <label>Search existing customer</label>
+                        <div class="item-search-wrap">
+                            <input type="text" id="cust-search" placeholder="Search by name or phone..." oninput="searchCustomers()" autocomplete="off">
+                            <div class="item-dropdown" id="cust-dropdown"></div>
+                        </div>
+                    </div>
+                    <div id="selected-customer" style="display:none;background:#f0fff4;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:10px;"></div>
+                    <div style="text-align:center;color:#7b8591;font-size:13px;margin:8px 0;">— OR —</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div class="form-row" style="margin-bottom:0;">
+                            <label>Walk-in Name</label>
+                            <input type="text" id="walkin-name" placeholder="Customer name">
+                        </div>
+                        <div class="form-row" style="margin-bottom:0;">
+                            <label>Phone</label>
+                            <input type="tel" id="walkin-phone" placeholder="Phone number">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div class="bill-card" style="margin-bottom:16px;">
+                    <h3>📦 Add Items</h3>
+                    <div class="form-row">
+                        <div class="item-search-wrap">
+                            <input type="text" id="item-search" placeholder="🔍 Search inventory by name or SKU..." oninput="searchItems()" autocomplete="off">
+                            <div class="item-dropdown" id="item-dropdown"></div>
+                        </div>
+                    </div>
+
+                    <table class="items-table" id="bill-items-table" style="display:none;">
+                        <thead>
+                            <tr><th>Item</th><th>Qty</th><th>Price ₹</th><th>Tax%</th><th>Disc%</th><th>Subtotal</th><th></th></tr>
+                        </thead>
+                        <tbody id="bill-items-body"></tbody>
+                    </table>
+                    <p id="no-items-msg" style="color:#7b8591;font-size:13px;margin-top:8px;">No items added yet.</p>
+                </div>
+
+                <!-- Notes -->
+                <div class="bill-card">
+                    <h3>📝 Notes</h3>
+                    <div class="form-row"><textarea id="bill-notes" rows="2" placeholder="Any notes for this bill..."></textarea></div>
+                </div>
+            </div>
+
+            <!-- Right: Summary & Payment -->
+            <div>
+                <div class="bill-card" style="position:sticky;top:80px;">
+                    <h3>💳 Payment</h3>
+                    <div class="form-row">
+                        <label>Payment Method</label>
+                        <select id="pay-method">
+                            <option>Cash</option><option>UPI</option><option>Card</option><option>Credit</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Payment Status</label>
+                        <select id="pay-status">
+                            <option>Paid</option><option>Pending</option><option>Partial</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Overall Discount (₹)</label>
+                        <input type="number" id="overall-discount" value="0" min="0" oninput="recalcSummary()">
+                    </div>
+
+                    <div class="summary-box" style="margin-top:16px;">
+                        <div class="summary-row"><span>Subtotal</span><span id="sum-subtotal">₹0.00</span></div>
+                        <div class="summary-row"><span>Tax</span><span id="sum-tax">₹0.00</span></div>
+                        <div class="summary-row"><span>Discount</span><span id="sum-disc" style="color:#27ae60;">-₹0.00</span></div>
+                        <div class="summary-row total"><span>Grand Total</span><span id="sum-total">₹0.00</span></div>
+                    </div>
+
+                    <button class="btn btn-accent" style="width:100%;margin-top:16px;padding:12px;" onclick="generateBill()">
+                        🧾 Generate Bill
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB 3: Purchase Bills ── -->
+    <div class="tab-pane" id="tab-purchase">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div class="toolbar" style="margin-bottom:0;">
+                <input type="text" id="pb-search" placeholder="🔍 Search supplier, invoice, item..." oninput="fetchPurchaseBills()">
+            </div>
+            <button class="btn btn-accent" onclick="openPurchaseModal()">+ Add Purchase Bill</button>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Invoice #</th><th>Supplier</th><th>Item</th><th>Qty</th><th>Purchase ₹</th><th>Total</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="pb-tbody">
+                <tr><td colspan="9"><div class="empty-state"><span>⏳</span>Loading...</div></td></tr>
+            </tbody>
+        </table>
+
+        <!-- Add Purchase Bill form (inline) -->
+        <div id="purchase-form-wrap" style="display:none;margin-top:20px;">
+            <div class="bill-card">
+                <h3>📦 New Purchase Entry</h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">
+                    <div class="form-row" style="margin-bottom:0;"><label>Supplier *</label><input type="text" id="pb-supplier" placeholder="Supplier name" required></div>
+                    <div class="form-row" style="margin-bottom:0;"><label>Invoice No.</label><input type="text" id="pb-invoice" placeholder="Supplier invoice #"></div>
+                    <div class="form-row" style="margin-bottom:0;">
+                        <label>Inventory Item *</label>
+                        <div class="item-search-wrap">
+                            <input type="text" id="pb-item-search" placeholder="Search item..." oninput="searchPBItem()" autocomplete="off">
+                            <div class="item-dropdown" id="pb-item-dropdown"></div>
+                        </div>
+                        <input type="hidden" id="pb-item-id">
+                        <small id="pb-item-name" style="color:#7b8591;"></small>
+                    </div>
+                    <div class="form-row" style="margin-bottom:0;"><label>Quantity *</label><input type="number" id="pb-qty" min="1" placeholder="0"></div>
+                    <div class="form-row" style="margin-bottom:0;"><label>Purchase Price ₹ *</label><input type="number" id="pb-price" min="0" step="0.01" placeholder="0.00" oninput="calcPBTotal()"></div>
+                    <div class="form-row" style="margin-bottom:0;"><label>New Selling Price ₹</label><input type="number" id="pb-selling" min="0" step="0.01" placeholder="Optional"></div>
+                    <div class="form-row" style="margin-bottom:0;"><label>Purchase Date</label><input type="date" id="pb-date"></div>
+                    <div class="form-row" style="margin-bottom:0;">
+                        <label>Payment Status</label>
+                        <select id="pb-pay-status"><option>Paid</option><option>Pending</option><option>Partial</option></select>
+                    </div>
+                </div>
+                <div style="display:flex;gap:14px;align-items:center;margin-top:14px;">
+                    <strong style="font-size:16px;">Total: <span id="pb-total">₹0.00</span></strong>
+                    <div class="form-row" style="flex:1;margin-bottom:0;"><input type="text" id="pb-notes" placeholder="Notes..."></div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;">
+                    <button class="btn-cancel" onclick="closePurchaseForm()">Cancel</button>
+                    <button class="btn btn-accent" onclick="submitPurchaseBill()">Save Purchase</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Bill View Modal -->
+<div class="modal-overlay" id="view-modal">
+    <div class="bill-print">
+        <button class="close-btn" onclick="closeViewModal()">✕</button>
+        <div id="bill-view-content"></div>
+        <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+            <button class="btn-cancel" onclick="closeViewModal()">Close</button>
+            <button class="btn btn-accent" onclick="window.print()">🖨️ Print</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirm -->
+<div class="confirm-overlay" id="confirm-modal">
+    <div class="confirm-box">
+        <h3>Delete Bill?</h3>
+        <p id="confirm-msg">This cannot be undone.</p>
+        <div class="confirm-actions">
+            <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+            <button class="btn btn-accent" style="background:#c0392b;" id="confirm-yes-btn">Delete</button>
+        </div>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="../js/auth.js"></script>
+<script>
+    // ── Helpers ──
+    let deleteId = null;
+    let selectedCustomer = null;
+    let billItems = [];
+    let searchTimeout = null;
+
+    function showToast(msg, type='success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.className = `toast ${type} show`;
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    function tagClass(s) { return {Paid:'tag-paid',Pending:'tag-pending',Partial:'tag-partial'}[s] || ''; }
+
+    function switchTab(name, btn) {
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-${name}`).classList.add('active');
+        btn.classList.add('active');
+        if (name === 'existing') fetchBills();
+        if (name === 'purchase') fetchPurchaseBills();
+    }
+
+    // ── Tab 1: Existing Bills ──
+    async function fetchBills() {
+        const search = document.getElementById('bill-search').value;
+        const paymentStatus = document.getElementById('bill-pay-status').value;
+        const paymentMethod = document.getElementById('bill-pay-method').value;
+        const params = new URLSearchParams({ search, paymentStatus, paymentMethod });
+        const data = await merciaApi(`/api/bills?${params}`);
+        const tbody = document.getElementById('bills-tbody');
+
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span>🧾</span>No bills found.</div></td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(b => `
+            <tr>
+                <td><strong>${b.billNumber}</strong></td>
+                <td>${b.customerName || '—'}<br><small style="color:#999;">${b.customerPhone || ''}</small></td>
+                <td>${b.items?.length || 0} item(s)</td>
+                <td><strong>₹${Number(b.grandTotal).toLocaleString('en-IN')}</strong></td>
+                <td>${b.paymentMethod}</td>
+                <td><span class="status-tag ${tagClass(b.paymentStatus)}">${b.paymentStatus}</span></td>
+                <td>${new Date(b.createdAt).toLocaleDateString('en-IN')}</td>
+                <td>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                        <button class="btn btn-sm btn-edit" onclick="viewBill('${b._id}')">View</button>
+                        <button class="btn btn-sm btn-dup" onclick="dupBill('${b._id}')">Dup</button>
+                        <button class="btn btn-sm btn-delete" onclick="confirmDelete('${b._id}','${b.billNumber}')">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function viewBill(id) {
+        const data = await merciaApi(`/api/bills/${id}`);
+        const b = data.data;
+        document.getElementById('bill-view-content').innerHTML = `
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="font-size:24px;letter-spacing:4px;color:#2C363F;">MERCIA</h2>
+                <p style="color:#7b8591;font-size:13px;">Business Management System</p>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+                <div><strong>Bill #:</strong> ${b.billNumber}<br><strong>Date:</strong> ${new Date(b.createdAt).toLocaleDateString('en-IN')}</div>
+                <div style="text-align:right;"><strong>Customer:</strong> ${b.customerName || 'Walk-in'}<br><strong>Phone:</strong> ${b.customerPhone || '—'}</div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+                <thead><tr style="background:#2C363F;color:white;">
+                    <th style="padding:8px;">Item</th><th style="padding:8px;">Qty</th><th style="padding:8px;">Price</th><th style="padding:8px;">Total</th>
+                </tr></thead>
+                <tbody>
+                    ${b.items.map(i => `<tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:8px;">${i.name}</td>
+                        <td style="padding:8px;">${i.qty}</td>
+                        <td style="padding:8px;">₹${Number(i.unitPrice).toLocaleString('en-IN')}</td>
+                        <td style="padding:8px;">₹${Number(i.subtotal).toLocaleString('en-IN')}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            <div style="text-align:right;">
+                <p>Subtotal: ₹${Number(b.subtotal).toLocaleString('en-IN')}</p>
+                <p>Tax: ₹${Number(b.taxAmount).toLocaleString('en-IN')}</p>
+                <p>Discount: -₹${Number(b.discountAmount).toLocaleString('en-IN')}</p>
+                <p style="font-size:20px;font-weight:700;color:#2C363F;">Grand Total: ₹${Number(b.grandTotal).toLocaleString('en-IN')}</p>
+                <p>Payment: ${b.paymentMethod} · <span class="status-tag ${tagClass(b.paymentStatus)}">${b.paymentStatus}</span></p>
+            </div>
+            ${b.notes ? `<p style="color:#7b8591;margin-top:10px;font-size:13px;">Notes: ${b.notes}</p>` : ''}
+        `;
+        document.getElementById('view-modal').classList.add('show');
+    }
+
+    function closeViewModal() { document.getElementById('view-modal').classList.remove('show'); }
+
+    async function dupBill(id) {
+        const data = await merciaApi(`/api/bills/${id}/duplicate`, { method: 'POST' });
+        if (data.success) { showToast(`Duplicated as ${data.data.billNumber}`, 'success'); fetchBills(); }
+        else showToast(data.message || 'Error.', 'error');
+    }
+
+    function confirmDelete(id, num) {
+        deleteId = id;
+        document.getElementById('confirm-msg').textContent = `Delete bill ${num}? This cannot be undone.`;
+        document.getElementById('confirm-modal').classList.add('show');
+    }
+    function closeConfirm() { document.getElementById('confirm-modal').classList.remove('show'); deleteId = null; }
+    document.getElementById('confirm-yes-btn').addEventListener('click', async () => {
+        if (!deleteId) return;
+        const data = await merciaApi(`/api/bills/${deleteId}`, { method: 'DELETE' });
+        if (data.success) { showToast(data.message, 'success'); fetchBills(); }
+        else showToast(data.message || 'Error.', 'error');
+        closeConfirm();
+    });
+
+    // ── Tab 2: New Bill ──
+    async function searchCustomers() {
+        clearTimeout(searchTimeout);
+        const search = document.getElementById('cust-search').value.trim();
+        if (!search) { document.getElementById('cust-dropdown').classList.remove('show'); return; }
+
+        searchTimeout = setTimeout(async () => {
+            const data = await merciaApi(`/api/customers?search=${encodeURIComponent(search)}`);
+            const dropdown = document.getElementById('cust-dropdown');
+            if (!data.data || data.data.length === 0) { dropdown.classList.remove('show'); return; }
+            dropdown.innerHTML = data.data.map(c => `
+                <div class="dropdown-item" onclick="selectCustomer('${c._id}','${c.name}','${c.phone}')">
+                    <strong>${c.name}</strong><small>${c.phone} · Purchases: ₹${Number(c.totalPurchases).toLocaleString('en-IN')}</small>
+                </div>
+            `).join('');
+            dropdown.classList.add('show');
+        }, 300);
+    }
+
+    function selectCustomer(id, name, phone) {
+        selectedCustomer = { id, name, phone };
+        document.getElementById('selected-customer').innerHTML = `✅ <strong>${name}</strong> · ${phone} <button onclick="clearCustomer()" style="background:none;border:none;color:#c0392b;cursor:pointer;margin-left:8px;">✕</button>`;
+        document.getElementById('selected-customer').style.display = 'block';
+        document.getElementById('cust-search').value = '';
+        document.getElementById('cust-dropdown').classList.remove('show');
+    }
+
+    function clearCustomer() {
+        selectedCustomer = null;
+        document.getElementById('selected-customer').style.display = 'none';
+    }
+
+    async function searchItems() {
+        clearTimeout(searchTimeout);
+        const search = document.getElementById('item-search').value.trim();
+        if (!search) { document.getElementById('item-dropdown').classList.remove('show'); return; }
+
+        searchTimeout = setTimeout(async () => {
+            const data = await merciaApi(`/api/inventory?search=${encodeURIComponent(search)}&status=active&limit=20`);
+            const dropdown = document.getElementById('item-dropdown');
+            if (!data.data || data.data.length === 0) { dropdown.classList.remove('show'); return; }
+            dropdown.innerHTML = data.data.map(item => `
+                <div class="dropdown-item" onclick="addBillItem('${item._id}','${item.name}','${item.sku}',${item.sellingPrice},${item.tax},${item.stockQty})">
+                    <strong>${item.name} <small style="color:#7b8591;">(${item.sku})</small></strong>
+                    <small>Stock: ${item.stockQty} ${item.unit} · ₹${item.sellingPrice}</small>
+                </div>
+            `).join('');
+            dropdown.classList.add('show');
+        }, 300);
+    }
+
+    function addBillItem(id, name, sku, price, tax, stock) {
+        document.getElementById('item-dropdown').classList.remove('show');
+        document.getElementById('item-search').value = '';
+
+        // Prevent duplicates
+        if (billItems.find(i => i.id === id)) { showToast('Item already in bill. Change quantity.', 'error'); return; }
+
+        billItems.push({ id, name, sku, qty: 1, price, tax, discount: 0, stock });
+        renderBillItems();
+    }
+
+    function renderBillItems() {
+        const table = document.getElementById('bill-items-table');
+        const body = document.getElementById('bill-items-body');
+        const msg = document.getElementById('no-items-msg');
+
+        if (billItems.length === 0) { table.style.display = 'none'; msg.style.display = 'block'; recalcSummary(); return; }
+        table.style.display = 'table'; msg.style.display = 'none';
+
+        body.innerHTML = billItems.map((item, i) => `
+            <tr>
+                <td><strong>${item.name}</strong><br><small style="color:#999;">${item.sku}</small></td>
+                <td><input type="number" value="${item.qty}" min="1" max="${item.stock}" style="width:60px;" onchange="updateItem(${i},'qty',this.value)"></td>
+                <td><input type="number" value="${item.price}" min="0" step="0.01" style="width:80px;" onchange="updateItem(${i},'price',this.value)"></td>
+                <td><input type="number" value="${item.tax}" min="0" max="100" style="width:55px;" onchange="updateItem(${i},'tax',this.value)"></td>
+                <td><input type="number" value="${item.discount}" min="0" max="100" style="width:55px;" onchange="updateItem(${i},'discount',this.value)"></td>
+                <td>₹${calcSubtotal(item).toFixed(2)}</td>
+                <td><button class="remove-item-btn" onclick="removeItem(${i})">✕</button></td>
+            </tr>
+        `).join('');
+        recalcSummary();
+    }
+
+    function updateItem(i, field, value) {
+        billItems[i][field] = parseFloat(value) || 0;
+        renderBillItems();
+    }
+
+    function removeItem(i) { billItems.splice(i, 1); renderBillItems(); }
+
+    function calcSubtotal(item) {
+        const base = item.qty * item.price;
+        const afterDisc = base * (1 - item.discount / 100);
+        return afterDisc * (1 + item.tax / 100);
+    }
+
+    function recalcSummary() {
+        let subtotal = 0, taxTotal = 0;
+        billItems.forEach(item => {
+            const base = item.qty * item.price;
+            const afterDisc = base * (1 - item.discount / 100);
+            subtotal += afterDisc;
+            taxTotal += afterDisc * (item.tax / 100);
+        });
+        const overallDisc = parseFloat(document.getElementById('overall-discount').value) || 0;
+        const grand = subtotal + taxTotal - overallDisc;
+
+        document.getElementById('sum-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+        document.getElementById('sum-tax').textContent = `₹${taxTotal.toFixed(2)}`;
+        document.getElementById('sum-disc').textContent = `-₹${overallDisc.toFixed(2)}`;
+        document.getElementById('sum-total').textContent = `₹${Math.max(0, grand).toFixed(2)}`;
+    }
+
+    async function generateBill() {
+        if (billItems.length === 0) { showToast('Add at least one item.', 'error'); return; }
+
+        let subtotal = 0, taxTotal = 0;
+        const items = billItems.map(item => {
+            const base = item.qty * item.price;
+            const afterDisc = base * (1 - item.discount / 100);
+            const sub = afterDisc * (1 + item.tax / 100);
+            subtotal += afterDisc;
+            taxTotal += afterDisc * (item.tax / 100);
+            return { inventory: item.id, name: item.name, sku: item.sku, qty: item.qty, unitPrice: item.price, tax: item.tax, discount: item.discount, subtotal: parseFloat(sub.toFixed(2)) };
+        });
+
+        const overallDisc = parseFloat(document.getElementById('overall-discount').value) || 0;
+        const grand = Math.max(0, subtotal + taxTotal - overallDisc);
+
+        const walkinName = document.getElementById('walkin-name').value.trim();
+        const walkinPhone = document.getElementById('walkin-phone').value.trim();
+
+        const body = {
+            customerId: selectedCustomer?.id || null,
+            customerName: selectedCustomer?.name || walkinName || 'Walk-in Customer',
+            customerPhone: selectedCustomer?.phone || walkinPhone || '',
+            items,
+            subtotal: parseFloat(subtotal.toFixed(2)),
+            taxAmount: parseFloat(taxTotal.toFixed(2)),
+            discountAmount: overallDisc,
+            grandTotal: parseFloat(grand.toFixed(2)),
+            paymentMethod: document.getElementById('pay-method').value,
+            paymentStatus: document.getElementById('pay-status').value,
+            notes: document.getElementById('bill-notes').value.trim(),
+        };
+
+        const data = await merciaApi('/api/bills', { method: 'POST', body: JSON.stringify(body) });
+
+        if (data.success) {
+            showToast(`${data.data.billNumber} created successfully!`, 'success');
+            // Reset
+            billItems = [];
+            selectedCustomer = null;
+            document.getElementById('selected-customer').style.display = 'none';
+            document.getElementById('walkin-name').value = '';
+            document.getElementById('walkin-phone').value = '';
+            document.getElementById('overall-discount').value = '0';
+            document.getElementById('bill-notes').value = '';
+            renderBillItems();
+        } else {
+            showToast(data.message || 'Error generating bill.', 'error');
+        }
+    }
+
+    // ── Tab 3: Purchase Bills ──
+    async function fetchPurchaseBills() {
+        const search = document.getElementById('pb-search').value;
+        const data = await merciaApi(`/api/purchase-bills?search=${encodeURIComponent(search)}`);
+        const tbody = document.getElementById('pb-tbody');
+
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><span>📦</span>No purchase bills yet.</div></td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(b => `
+            <tr>
+                <td>${b.invoiceNumber || '—'}</td>
+                <td>${b.supplier}</td>
+                <td>${b.itemName || b.inventory?.name || '—'}</td>
+                <td>${b.qty}</td>
+                <td>₹${Number(b.purchasePrice).toLocaleString('en-IN')}</td>
+                <td>₹${Number(b.totalAmount).toLocaleString('en-IN')}</td>
+                <td>${new Date(b.purchaseDate).toLocaleDateString('en-IN')}</td>
+                <td><span class="status-tag ${tagClass(b.paymentStatus)}">${b.paymentStatus}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-delete" onclick="deletePB('${b._id}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function openPurchaseModal() {
+        const form = document.getElementById('purchase-form-wrap');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        // Set today as default date
+        document.getElementById('pb-date').value = new Date().toISOString().split('T')[0];
+    }
+
+    function closePurchaseForm() { document.getElementById('purchase-form-wrap').style.display = 'none'; }
+
+    function calcPBTotal() {
+        const qty = parseFloat(document.getElementById('pb-qty').value) || 0;
+        const price = parseFloat(document.getElementById('pb-price').value) || 0;
+        document.getElementById('pb-total').textContent = `₹${(qty * price).toFixed(2)}`;
+    }
+    document.getElementById('pb-qty').addEventListener('input', calcPBTotal);
+
+    async function searchPBItem() {
+        clearTimeout(searchTimeout);
+        const search = document.getElementById('pb-item-search').value.trim();
+        if (!search) { document.getElementById('pb-item-dropdown').classList.remove('show'); return; }
+        searchTimeout = setTimeout(async () => {
+            const data = await merciaApi(`/api/inventory?search=${encodeURIComponent(search)}&limit=15`);
+            const dropdown = document.getElementById('pb-item-dropdown');
+            if (!data.data || data.data.length === 0) { dropdown.classList.remove('show'); return; }
+            dropdown.innerHTML = data.data.map(item => `
+                <div class="dropdown-item" onclick="selectPBItem('${item._id}','${item.name}','${item.purchasePrice}','${item.sellingPrice}')">
+                    <strong>${item.name}</strong><small>SKU: ${item.sku} · Stock: ${item.stockQty}</small>
+                </div>
+            `).join('');
+            dropdown.classList.add('show');
+        }, 300);
+    }
+
+    function selectPBItem(id, name, purPrice, sellPrice) {
+        document.getElementById('pb-item-id').value = id;
+        document.getElementById('pb-item-name').textContent = '✅ ' + name;
+        document.getElementById('pb-item-search').value = name;
+        document.getElementById('pb-price').value = purPrice;
+        document.getElementById('pb-selling').value = sellPrice;
+        document.getElementById('pb-item-dropdown').classList.remove('show');
+        calcPBTotal();
+    }
+
+    async function submitPurchaseBill() {
+        const inventoryId = document.getElementById('pb-item-id').value;
+        const supplier = document.getElementById('pb-supplier').value.trim();
+        const qty = parseInt(document.getElementById('pb-qty').value);
+        const purchasePrice = parseFloat(document.getElementById('pb-price').value);
+
+        if (!supplier || !inventoryId || !qty || !purchasePrice) {
+            showToast('Fill in all required fields.', 'error'); return;
+        }
+
+        const body = {
+            supplier,
+            inventory: inventoryId,
+            invoiceNumber: document.getElementById('pb-invoice').value.trim(),
+            qty,
+            purchasePrice,
+            sellingPrice: parseFloat(document.getElementById('pb-selling').value) || undefined,
+            purchaseDate: document.getElementById('pb-date').value,
+            paymentStatus: document.getElementById('pb-pay-status').value,
+            notes: document.getElementById('pb-notes').value.trim(),
+        };
+
+        const data = await merciaApi('/api/purchase-bills', { method: 'POST', body: JSON.stringify(body) });
+
+        if (data.success) {
+            showToast('Purchase recorded & inventory updated!', 'success');
+            closePurchaseForm();
+            document.getElementById('pb-supplier').value = '';
+            document.getElementById('pb-item-id').value = '';
+            document.getElementById('pb-item-search').value = '';
+            document.getElementById('pb-item-name').textContent = '';
+            document.getElementById('pb-qty').value = '';
+            document.getElementById('pb-price').value = '';
+            fetchPurchaseBills();
+        } else {
+            showToast(data.message || 'Error.', 'error');
+        }
+    }
+
+    async function deletePB(id) {
+        if (!confirm('Delete this purchase bill?')) return;
+        const data = await merciaApi(`/api/purchase-bills/${id}`, { method: 'DELETE' });
+        if (data.success) { showToast('Deleted.', 'success'); fetchPurchaseBills(); }
+        else showToast(data.message || 'Error.', 'error');
+    }
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.item-search-wrap')) {
+            document.querySelectorAll('.item-dropdown').forEach(d => d.classList.remove('show'));
+        }
+    });
+
+    document.getElementById('view-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeViewModal(); });
+    document.getElementById('confirm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+    document.addEventListener('DOMContentLoaded', fetchBills);
+</script>
+</body>
+</html>

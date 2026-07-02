@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance - MERCIA</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <style>
+        body { background:#F2F5EA; }
+        .page-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px; }
+        .page-header h1 { font-size:28px;color:#2C363F; }
+        .tabs { display:flex;gap:0;margin-bottom:28px;border-bottom:2px solid #e0e0e0; }
+        .tab-btn { padding:10px 22px;background:none;border:none;font-size:14px;font-weight:600;color:#7b8591;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s; }
+        .tab-btn.active { color:#E39774;border-bottom-color:#E39774; }
+        .tab-pane { display:none; }
+        .tab-pane.active { display:block; }
+
+        /* Mark Attendance */
+        .date-picker-row { display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap; }
+        .date-picker-row label { font-weight:600;color:#2C363F; }
+        .date-picker-row input { padding:9px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit; }
+        .date-picker-row input:focus { outline:none;border-color:#E39774; }
+        .btn { padding:9px 18px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s; }
+        .btn-accent { background:#E39774;color:white; }
+        .btn-accent:hover { background:#d17d5e; }
+        .att-table { width:100%;border-collapse:collapse;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06); }
+        .att-table th { background:#2C363F;color:white;padding:14px 16px;text-align:left;font-size:13px;font-weight:600; }
+        .att-table td { padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:14px; }
+        .att-table tr:last-child td { border-bottom:none; }
+        .status-select {
+            padding:7px 10px;border:2px solid #e0e0e0;border-radius:8px;font-size:13px;
+            font-family:inherit;cursor:pointer;transition:border-color 0.2s;
+        }
+        .status-select:focus { outline:none;border-color:#E39774; }
+        .status-select.Present { border-color:#27ae60;background:#f0fff4; }
+        .status-select.Absent { border-color:#c0392b;background:#fff5f5; }
+        .status-select.Late { border-color:#e67e22;background:#fff8f0; }
+        .status-select.Leave { border-color:#3498db;background:#f0f8ff; }
+        .status-select.HalfDay { border-color:#f39c12;background:#fffbf0; }
+        .remarks-input { padding:6px 10px;border:2px solid #e0e0e0;border-radius:6px;font-size:13px;width:100%; }
+        .avatar { width:36px;height:36px;border-radius:50%;background:#2C363F;color:white;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;margin-right:8px;vertical-align:middle; }
+        .submit-row { display:flex;justify-content:flex-end;margin-top:16px;gap:10px; }
+
+        /* History */
+        .filter-row { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px; }
+        .filter-row input, .filter-row select { padding:9px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit; }
+        .filter-row input:focus, .filter-row select:focus { outline:none;border-color:#E39774; }
+        .status-tag { padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;display:inline-block; }
+        .tag-present { background:#d6f5e4;color:#1e5f34; }
+        .tag-absent { background:#fde8e8;color:#c0392b; }
+        .tag-late { background:#ffe6d4;color:#b25d29; }
+        .tag-leave { background:#dce7ff;color:#2f56b7; }
+        .tag-halfday { background:#fff3cd;color:#856404; }
+        .empty-state { text-align:center;padding:50px 20px;color:#7b8591; }
+        .empty-state span { font-size:40px;display:block;margin-bottom:10px; }
+        .toast { position:fixed;bottom:24px;right:24px;background:#2C363F;color:white;padding:12px 20px;border-radius:10px;font-size:14px;z-index:3000;transform:translateY(80px);opacity:0;transition:all 0.3s; }
+        .toast.show { transform:translateY(0);opacity:1; }
+        .toast.success { background:#27ae60; }
+        .toast.error { background:#c0392b; }
+        .summary-row { display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px; }
+        .summary-chip { padding:8px 16px;border-radius:99px;font-size:13px;font-weight:600;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+    </style>
+</head>
+<body>
+<header>
+    <div class="navbar">
+        <a href="../dashboard.html" class="logo">MERCIA</a>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="inventory.html">Inventory</a></li>
+                <li><a href="billing.html">Billing</a></li>
+                <li><a href="customers.html">Customers</a></li>
+                <li><a href="staff.html">Staff</a></li>
+                <li><a href="reports.html">Reports</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main style="max-width:1240px;margin:32px auto;padding:0 20px;">
+    <div class="page-header">
+        <div>
+            <h1>📅 Attendance</h1>
+            <p style="color:#7b8591;font-size:14px;margin-top:4px;">Mark and track staff attendance</p>
+        </div>
+        <a href="staff.html" class="btn" style="background:#f0f0f0;color:#2C363F;text-decoration:none;">← Back to Staff</a>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('mark')">✅ Mark Attendance</button>
+        <button class="tab-btn" onclick="switchTab('history')">📋 History</button>
+        <button class="tab-btn" onclick="switchTab('report')">📊 Monthly Report</button>
+    </div>
+
+    <!-- Tab 1: Mark Attendance -->
+    <div class="tab-pane active" id="tab-mark">
+        <div class="date-picker-row">
+            <label>Date:</label>
+            <input type="date" id="att-date" value="">
+            <button class="btn btn-accent" onclick="loadStaffForMarking()">Load Staff</button>
+        </div>
+
+        <div id="att-summary" class="summary-row" style="display:none;"></div>
+
+        <table class="att-table" id="mark-table" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Staff Member</th>
+                    <th>Role / Dept.</th>
+                    <th>Status</th>
+                    <th>Check-In Time</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody id="mark-tbody"></tbody>
+        </table>
+
+        <div id="mark-empty" class="empty-state" style="display:none;">
+            <span>👥</span>No active staff found.
+        </div>
+
+        <div class="submit-row" id="submit-row" style="display:none;">
+            <button class="btn" style="background:#f0f0f0;color:#555;" onclick="markAll('Present')">Mark All Present</button>
+            <button class="btn btn-accent" onclick="submitAttendance()">💾 Save Attendance</button>
+        </div>
+    </div>
+
+    <!-- Tab 2: History -->
+    <div class="tab-pane" id="tab-history">
+        <div class="filter-row">
+            <input type="date" id="hist-date" onchange="fetchHistory()">
+            <select id="hist-status" onchange="fetchHistory()">
+                <option value="">All Status</option>
+                <option>Present</option><option>Absent</option>
+                <option>Half Day</option><option>Leave</option><option>Late</option>
+            </select>
+        </div>
+        <table class="att-table">
+            <thead>
+                <tr><th>Staff</th><th>Date</th><th>Status</th><th>Check-In</th><th>Remarks</th><th>Marked By</th></tr>
+            </thead>
+            <tbody id="hist-tbody">
+                <tr><td colspan="6"><div class="empty-state"><span>📋</span>Select a date to view history.</div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Tab 3: Monthly Report -->
+    <div class="tab-pane" id="tab-report">
+        <div class="filter-row">
+            <select id="rep-month" onchange="fetchReport()">
+                <option value="1">January</option><option value="2">February</option>
+                <option value="3">March</option><option value="4">April</option>
+                <option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option>
+                <option value="9">September</option><option value="10">October</option>
+                <option value="11">November</option><option value="12">December</option>
+            </select>
+            <select id="rep-year" onchange="fetchReport()"></select>
+        </div>
+        <table class="att-table">
+            <thead>
+                <tr><th>Staff</th><th>Present</th><th>Absent</th><th>Half Day</th><th>Leave</th><th>Late</th></tr>
+            </thead>
+            <tbody id="rep-tbody">
+                <tr><td colspan="6"><div class="empty-state"><span>📊</span>Select month and year.</div></td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<div class="toast" id="toast"></div>
+<script src="../js/auth.js"></script>
+<script>
+    let staffList = [];
+
+    // Set today as default date
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('att-date').value = today;
+        document.getElementById('hist-date').value = today;
+
+        // Populate years
+        const yearSel = document.getElementById('rep-year');
+        const currentYear = new Date().getFullYear();
+        for (let y = currentYear; y >= currentYear - 3; y--) {
+            const opt = document.createElement('option');
+            opt.value = y; opt.textContent = y;
+            if (y === currentYear) opt.selected = true;
+            yearSel.appendChild(opt);
+        }
+        // Set current month
+        document.getElementById('rep-month').value = new Date().getMonth() + 1;
+
+        loadStaffForMarking();
+        fetchHistory();
+    });
+
+    function switchTab(name) {
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-${name}`).classList.add('active');
+        event.target.classList.add('active');
+        if (name === 'report') fetchReport();
+    }
+
+    function initials(name) {
+        return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    }
+
+    function statusTagClass(s) {
+        return { Present: 'tag-present', Absent: 'tag-absent', Late: 'tag-late', Leave: 'tag-leave', 'Half Day': 'tag-halfday' }[s] || '';
+    }
+
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.className = `toast ${type} show`;
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    async function loadStaffForMarking() {
+        const date = document.getElementById('att-date').value;
+        if (!date) return;
+
+        const data = await merciaApi(`/api/staff?status=active`);
+        staffList = data.data || [];
+
+        // Also load existing attendance for this date
+        const attData = await merciaApi(`/api/attendance?date=${date}`);
+        const existingMap = {};
+        (attData.data || []).forEach(r => { existingMap[r.staff._id] = r; });
+
+        const tbody = document.getElementById('mark-tbody');
+        const table = document.getElementById('mark-table');
+        const empty = document.getElementById('mark-empty');
+        const submitRow = document.getElementById('submit-row');
+        const summaryDiv = document.getElementById('att-summary');
+
+        if (staffList.length === 0) {
+            table.style.display = 'none';
+            empty.style.display = 'block';
+            submitRow.style.display = 'none';
+            return;
+        }
+
+        tbody.innerHTML = staffList.map((s, i) => {
+            const existing = existingMap[s._id];
+            const status = existing ? existing.status : 'Present';
+            const time = existing ? existing.checkInTime : '';
+            const remarks = existing ? existing.remarks : '';
+
+            return `<tr>
+                <td>
+                    <span class="avatar">${initials(s.name)}</span>
+                    <strong>${s.name}</strong>
+                </td>
+                <td style="color:#7b8591;font-size:13px;">${s.role || '—'} ${s.department ? '/ ' + s.department : ''}</td>
+                <td>
+                    <select class="status-select ${status.replace(' ', '')}" id="status-${i}"
+                        onchange="updateStatusColor(this)">
+                        <option ${status==='Present'?'selected':''}>Present</option>
+                        <option ${status==='Absent'?'selected':''}>Absent</option>
+                        <option ${status==='Half Day'?'selected':''}>Half Day</option>
+                        <option ${status==='Leave'?'selected':''}>Leave</option>
+                        <option ${status==='Late'?'selected':''}>Late</option>
+                    </select>
+                </td>
+                <td><input type="time" class="remarks-input" id="time-${i}" value="${time}" style="width:120px;"></td>
+                <td><input type="text" class="remarks-input" id="remarks-${i}" value="${remarks}" placeholder="Optional..."></td>
+            </tr>`;
+        }).join('');
+
+        table.style.display = 'table';
+        empty.style.display = 'none';
+        submitRow.style.display = 'flex';
+
+        // Summary chips
+        const counts = { Present: 0, Absent: 0, 'Half Day': 0, Leave: 0, Late: 0 };
+        Object.values(existingMap).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+        const total = Object.values(existingMap).length;
+        summaryDiv.style.display = 'flex';
+        summaryDiv.innerHTML = total > 0
+            ? Object.entries(counts).map(([k, v]) => `<span class="summary-chip">${k}: <strong>${v}</strong></span>`).join('') + `<span class="summary-chip" style="background:#E39774;color:white;">Marked: ${total}/${staffList.length}</span>`
+            : `<span class="summary-chip" style="color:#7b8591;">No attendance marked yet for this date.</span>`;
+    }
+
+    function updateStatusColor(sel) {
+        sel.className = 'status-select ' + sel.value.replace(' ', '');
+    }
+
+    function markAll(status) {
+        staffList.forEach((_, i) => {
+            const sel = document.getElementById(`status-${i}`);
+            if (sel) { sel.value = status; updateStatusColor(sel); }
+        });
+    }
+
+    async function submitAttendance() {
+        const date = document.getElementById('att-date').value;
+        if (!date || staffList.length === 0) return;
+
+        const records = staffList.map((s, i) => ({
+            staffId: s._id,
+            status: document.getElementById(`status-${i}`)?.value || 'Present',
+            checkInTime: document.getElementById(`time-${i}`)?.value || '',
+            remarks: document.getElementById(`remarks-${i}`)?.value || '',
+        }));
+
+        const data = await merciaApi('/api/attendance/bulk', {
+            method: 'POST',
+            body: JSON.stringify({ date, records }),
+        });
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            loadStaffForMarking(); // refresh summary
+        } else {
+            showToast(data.message || 'Error saving attendance.', 'error');
+        }
+    }
+
+    async function fetchHistory() {
+        const date = document.getElementById('hist-date').value;
+        const status = document.getElementById('hist-status').value;
+        if (!date) return;
+
+        const params = new URLSearchParams({ date });
+        if (status) params.append('status', status);
+        const data = await merciaApi(`/api/attendance?${params}`);
+
+        const tbody = document.getElementById('hist-tbody');
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span>📋</span>No records for this date.</div></td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(r => `
+            <tr>
+                <td><span class="avatar">${initials(r.staff?.name || '?')}</span><strong>${r.staff?.name || '—'}</strong></td>
+                <td>${new Date(r.date).toLocaleDateString('en-IN')}</td>
+                <td><span class="status-tag ${statusTagClass(r.status)}">${r.status}</span></td>
+                <td>${r.checkInTime || '—'}</td>
+                <td>${r.remarks || '—'}</td>
+                <td>${r.markedBy?.username || '—'}</td>
+            </tr>
+        `).join('');
+    }
+
+    async function fetchReport() {
+        const month = document.getElementById('rep-month').value;
+        const year = document.getElementById('rep-year').value;
+        if (!month || !year) return;
+
+        const data = await merciaApi(`/api/attendance/report?month=${month}&year=${year}`);
+        const tbody = document.getElementById('rep-tbody');
+
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span>📊</span>No data for this period.</div></td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(row => `
+            <tr>
+                <td>
+                    <span class="avatar">${initials(row.staff.name)}</span>
+                    <strong>${row.staff.name}</strong><br>
+                    <small style="color:#7b8591;">${row.staff.role || ''}</small>
+                </td>
+                <td><span class="status-tag tag-present">${row.summary.Present}</span></td>
+                <td><span class="status-tag tag-absent">${row.summary.Absent}</span></td>
+                <td><span class="status-tag tag-halfday">${row.summary['Half Day']}</span></td>
+                <td><span class="status-tag tag-leave">${row.summary.Leave}</span></td>
+                <td><span class="status-tag tag-late">${row.summary.Late}</span></td>
+            </tr>
+        `).join('');
+    }
+</script>
+</body>
+</html>

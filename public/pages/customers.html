@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers - MERCIA</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <style>
+        body { background:#F2F5EA; }
+        .page-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px; }
+        .page-header h1 { font-size:28px;color:#2C363F; }
+        .toolbar { display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px; }
+        .toolbar input { padding:9px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;min-width:280px; }
+        .toolbar input:focus { outline:none;border-color:#E39774; }
+        .btn { padding:9px 18px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s; }
+        .btn-accent { background:#E39774;color:white; }
+        .btn-accent:hover { background:#d17d5e; }
+        .btn-sm { padding:5px 12px;font-size:12px;border-radius:6px;border:none;cursor:pointer;font-weight:600; }
+        .btn-edit { background:#dce7ff;color:#2f56b7; }
+        .btn-delete { background:#fde8e8;color:#c0392b; }
+        .btn-edit:hover { background:#b8d0ff; }
+        .btn-delete:hover { background:#fbc5c5; }
+        .data-table { width:100%;border-collapse:collapse;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06); }
+        .data-table th { background:#2C363F;color:white;padding:14px 16px;text-align:left;font-size:13px;font-weight:600; }
+        .data-table td { padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:14px;color:#2C363F; }
+        .data-table tr:last-child td { border-bottom:none; }
+        .data-table tr:hover td { background:#fafafa; }
+        .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center; }
+        .modal-overlay.show { display:flex; }
+        .modal { background:white;border-radius:20px;padding:32px;max-width:600px;width:90%;max-height:88vh;overflow-y:auto;position:relative; }
+        .modal h2 { margin-bottom:20px;color:#2C363F;font-size:22px; }
+        .form-grid { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+        .fg { display:flex;flex-direction:column;gap:5px; }
+        .fg.full { grid-column:1/-1; }
+        .fg label { font-size:13px;font-weight:600;color:#555; }
+        .fg input, .fg textarea { padding:9px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit; }
+        .fg input:focus, .fg textarea:focus { outline:none;border-color:#E39774; }
+        .modal-footer { display:flex;gap:10px;justify-content:flex-end;margin-top:20px; }
+        .btn-cancel { background:#f0f0f0;color:#555;padding:9px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px; }
+        .close-btn { position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;cursor:pointer;color:#999; }
+        .confirm-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center; }
+        .confirm-overlay.show { display:flex; }
+        .confirm-box { background:white;border-radius:16px;padding:28px;max-width:400px;width:90%;text-align:center; }
+        .confirm-box h3 { margin-bottom:10px; }
+        .confirm-box p { color:#7b8591;margin-bottom:20px; }
+        .confirm-actions { display:flex;gap:10px;justify-content:center; }
+        .toast { position:fixed;bottom:24px;right:24px;background:#2C363F;color:white;padding:12px 20px;border-radius:10px;font-size:14px;z-index:3000;transform:translateY(80px);opacity:0;transition:all 0.3s; }
+        .toast.show { transform:translateY(0);opacity:1; }
+        .toast.success { background:#27ae60; }
+        .toast.error { background:#c0392b; }
+        .empty-state { text-align:center;padding:60px 20px;color:#7b8591; }
+        .empty-state span { font-size:48px;display:block;margin-bottom:12px; }
+        /* History panel */
+        .history-panel { background:#F7F8FA;border-radius:12px;padding:16px;margin-top:14px; }
+        .history-panel h4 { margin-bottom:10px;color:#2C363F; }
+        .hist-item { padding:8px 0;border-bottom:1px solid #eee;font-size:13px;display:flex;justify-content:space-between; }
+        .hist-item:last-child { border-bottom:none; }
+    </style>
+</head>
+<body>
+<header>
+    <div class="navbar">
+        <a href="../dashboard.html" class="logo">MERCIA</a>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="inventory.html">Inventory</a></li>
+                <li><a href="billing.html">Billing</a></li>
+                <li><a href="customers.html">Customers</a></li>
+                <li><a href="staff.html">Staff</a></li>
+                <li><a href="reports.html">Reports</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main style="max-width:1240px;margin:32px auto;padding:0 20px;">
+    <div class="page-header">
+        <div>
+            <h1>🧑‍🤝‍🧑 Customers</h1>
+            <p style="color:#7b8591;font-size:14px;margin-top:4px;" id="cust-count">Loading...</p>
+        </div>
+        <button class="btn btn-accent" onclick="openAddModal()">+ Add Customer</button>
+    </div>
+
+    <div class="toolbar">
+        <input type="text" id="search-input" placeholder="🔍 Search by name, phone, email, GST..." oninput="fetchCustomers()">
+    </div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>GST No.</th>
+                <th>Total Purchases</th>
+                <th>Outstanding</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="cust-tbody">
+            <tr><td colspan="7" class="empty-state"><span>⏳</span>Loading...</td></tr>
+        </tbody>
+    </table>
+</main>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="cust-modal">
+    <div class="modal">
+        <button class="close-btn" onclick="closeModal()">✕</button>
+        <h2 id="modal-title">Add Customer</h2>
+        <form id="cust-form">
+            <div class="form-grid">
+                <div class="fg"><label>Name *</label><input type="text" id="f-name" required placeholder="Customer name"></div>
+                <div class="fg"><label>Phone *</label><input type="tel" id="f-phone" required placeholder="Mobile number"></div>
+                <div class="fg"><label>Email</label><input type="email" id="f-email" placeholder="email@example.com"></div>
+                <div class="fg"><label>GST Number</label><input type="text" id="f-gst" placeholder="Optional"></div>
+                <div class="fg full"><label>Address</label><input type="text" id="f-address" placeholder="Full address"></div>
+                <div class="fg full"><label>Notes</label><textarea id="f-notes" rows="2" placeholder="Any notes..."></textarea></div>
+            </div>
+            <!-- Purchase history (view only in edit mode) -->
+            <div id="purchase-history-section" style="display:none;">
+                <div class="history-panel">
+                    <h4>📋 Purchase History</h4>
+                    <div id="history-list"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-accent" id="save-btn">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirm -->
+<div class="confirm-overlay" id="confirm-modal">
+    <div class="confirm-box">
+        <h3>Delete Customer?</h3>
+        <p id="confirm-msg">This cannot be undone.</p>
+        <div class="confirm-actions">
+            <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+            <button class="btn btn-accent" style="background:#c0392b;" id="confirm-yes-btn">Delete</button>
+        </div>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="../js/auth.js"></script>
+<script>
+    let editingId = null;
+    let deleteId = null;
+
+    function showToast(msg, type='success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.className = `toast ${type} show`;
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    async function fetchCustomers() {
+        const search = document.getElementById('search-input').value;
+        const data = await merciaApi(`/api/customers?search=${encodeURIComponent(search)}`);
+        document.getElementById('cust-count').textContent = `${data.total} customer(s)`;
+        const tbody = document.getElementById('cust-tbody');
+
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span>🧑‍🤝‍🧑</span>No customers yet.</div></td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(c => `
+            <tr>
+                <td><strong>${c.name}</strong></td>
+                <td>${c.phone}</td>
+                <td>${c.email || '—'}</td>
+                <td>${c.gstNumber || '—'}</td>
+                <td>₹${Number(c.totalPurchases).toLocaleString('en-IN')}</td>
+                <td style="color:${c.outstandingBalance > 0 ? '#c0392b' : '#27ae60'};">
+                    ₹${Number(c.outstandingBalance).toLocaleString('en-IN')}
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-sm btn-edit" onclick="openEditModal('${c._id}')">View / Edit</button>
+                        <button class="btn btn-sm btn-delete" onclick="confirmDelete('${c._id}','${c.name}')">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function openAddModal() {
+        editingId = null;
+        document.getElementById('modal-title').textContent = 'Add Customer';
+        document.getElementById('cust-form').reset();
+        document.getElementById('purchase-history-section').style.display = 'none';
+        document.getElementById('cust-modal').classList.add('show');
+    }
+
+    async function openEditModal(id) {
+        editingId = id;
+        document.getElementById('modal-title').textContent = 'Edit Customer';
+        const data = await merciaApi(`/api/customers/${id}`);
+        const c = data.data;
+        const history = data.purchaseHistory || [];
+
+        document.getElementById('f-name').value = c.name || '';
+        document.getElementById('f-phone').value = c.phone || '';
+        document.getElementById('f-email').value = c.email || '';
+        document.getElementById('f-gst').value = c.gstNumber || '';
+        document.getElementById('f-address').value = c.address || '';
+        document.getElementById('f-notes').value = c.notes || '';
+
+        // Show purchase history
+        const histSection = document.getElementById('purchase-history-section');
+        const histList = document.getElementById('history-list');
+        if (history.length > 0) {
+            histList.innerHTML = history.map(b => `
+                <div class="hist-item">
+                    <span>${b.billNumber} — ${new Date(b.createdAt).toLocaleDateString('en-IN')}</span>
+                    <span>₹${Number(b.grandTotal).toLocaleString('en-IN')} <strong>${b.paymentStatus}</strong></span>
+                </div>
+            `).join('');
+            histSection.style.display = 'block';
+        } else {
+            histList.innerHTML = '<p style="color:#7b8591;font-size:13px;">No purchase history yet.</p>';
+            histSection.style.display = 'block';
+        }
+
+        document.getElementById('cust-modal').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('cust-modal').classList.remove('show');
+        editingId = null;
+    }
+
+    document.getElementById('cust-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('save-btn');
+        btn.disabled = true; btn.textContent = 'Saving...';
+
+        const body = {
+            name: document.getElementById('f-name').value.trim(),
+            phone: document.getElementById('f-phone').value.trim(),
+            email: document.getElementById('f-email').value.trim(),
+            gstNumber: document.getElementById('f-gst').value.trim(),
+            address: document.getElementById('f-address').value.trim(),
+            notes: document.getElementById('f-notes').value.trim(),
+        };
+
+        const url = editingId ? `/api/customers/${editingId}` : '/api/customers';
+        const method = editingId ? 'PUT' : 'POST';
+        const data = await merciaApi(url, { method, body: JSON.stringify(body) });
+
+        if (data.success) {
+            showToast(editingId ? 'Customer updated!' : 'Customer added!', 'success');
+            closeModal(); fetchCustomers();
+        } else showToast(data.message || 'Error.', 'error');
+        btn.disabled = false; btn.textContent = 'Save';
+    });
+
+    function confirmDelete(id, name) {
+        deleteId = id;
+        document.getElementById('confirm-msg').textContent = `Delete "${name}"? This cannot be undone.`;
+        document.getElementById('confirm-modal').classList.add('show');
+    }
+    function closeConfirm() { document.getElementById('confirm-modal').classList.remove('show'); deleteId = null; }
+    document.getElementById('confirm-yes-btn').addEventListener('click', async () => {
+        if (!deleteId) return;
+        const data = await merciaApi(`/api/customers/${deleteId}`, { method: 'DELETE' });
+        if (data.success) { showToast(data.message, 'success'); fetchCustomers(); }
+        else showToast(data.message || 'Delete failed.', 'error');
+        closeConfirm();
+    });
+
+    document.getElementById('cust-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+    document.getElementById('confirm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+    document.addEventListener('DOMContentLoaded', fetchCustomers);
+</script>
+</body>
+</html>
