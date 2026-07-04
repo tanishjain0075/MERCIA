@@ -10,11 +10,22 @@ connectDB();
 
 const app = express();
 
+// ── CORS ──
+// In production: restrict to your Vercel domain via CORS_ORIGIN env var.
+// In development: allow all origins so local testing works without config.
+const corsOptions = process.env.CORS_ORIGIN
+  ? {
+      origin: process.env.CORS_ORIGIN.split(',').map((o) => o.trim()),
+      credentials: true,
+    }
+  : {}; // empty = allow all (development default)
+
+app.use(cors(corsOptions));
+
 // ── Core Middleware ──
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev')); // log all requests in dev
 }
 
@@ -51,10 +62,17 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: 'Internal server error.' });
 });
 
-// ── Start Server ──
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 MERCIA server running on http://localhost:${PORT}`);
-  console.log(`📁 Serving static files from /public`);
-  console.log(`🌿 Environment: ${process.env.NODE_ENV}`);
-});
+// ── Start Server (local development only) ──
+// Vercel runs the app as a serverless function — it imports the exported `app`
+// and never calls listen(). Calling listen() in production would throw an error.
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀 MERCIA server running on http://localhost:${PORT}`);
+    console.log(`📁 Serving static files from /public`);
+    console.log(`🌿 Environment: ${process.env.NODE_ENV}`);
+  });
+}
+
+// ── Export for Vercel Serverless Function ──
+module.exports = app;
